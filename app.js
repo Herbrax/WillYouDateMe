@@ -62,6 +62,13 @@ const FALLBACK = {
     "wrongBody": "Go away you harlot! Shoo shoo! 😝",
     "dismiss": "oops — let me try again"
   },
+  "sound": {
+    "track": "bunnyhop.mp3",
+    "volume": 0.2,
+    "defaultOn": true,
+    "onTitle": "Sound on",
+    "offTitle": "Sound off"
+  },
   "plan": {
     "title": "So — when?",
     "subtitle": "Four small things and it's official.",
@@ -305,7 +312,9 @@ const Fx = (() => {
 const Sound = (() => {
   let on = false;
   let actx = null;
+  let cfg = {};
   const btn = $('#soundToggle');
+  const music = $('#music');
 
   const ensure = () => {
     if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
@@ -329,14 +338,45 @@ const Sound = (() => {
     osc.stop(t + dur + 0.02);
   }
 
+  const paint = () => {
+    btn.setAttribute('aria-pressed', String(on));
+    btn.title = on ? cfg.onTitle : cfg.offTitle;
+  };
+
+  // Rejects while the page has not been interacted with — that is the autoplay
+  // policy talking, not an error, so it is swallowed and retried on the gesture.
+  const play = () => (on && music.src ? music.play().catch(() => {}) : Promise.resolve());
+
+  function init(sound) {
+    cfg = sound;
+    music.src = sound.track;
+    music.loop = true;
+    music.volume = clamp(sound.volume ?? 0.2, 0, 1);
+    on = Boolean(sound.defaultOn);
+    paint();
+    if (!on) return;
+
+    music.play().catch(() => {
+      // Blocked. Start on whatever the first gesture turns out to be —
+      // pressing Yes, chasing No, or a key.
+      const events = ['pointerdown', 'keydown', 'touchstart'];
+      const unlock = () => {
+        events.forEach((ev) => window.removeEventListener(ev, unlock));
+        play();
+      };
+      events.forEach((ev) => window.addEventListener(ev, unlock, { passive: true }));
+    });
+  }
+
   btn.addEventListener('click', () => {
     on = !on;
-    btn.setAttribute('aria-pressed', String(on));
-    btn.title = on ? 'Sound on' : 'Sound off';
-    if (on) { ensure(); tone(880, 0, 0.18, 'triangle', 0.04); }
+    paint();
+    if (on) { ensure(); play(); tone(880, 0, 0.18, 'triangle', 0.04); }
+    else music.pause();          // pause, not stop: it picks up where it left off
   });
 
   return {
+    init,
     blip: () => tone(720 + Math.random() * 240, 0, 0.09, 'triangle', 0.03),
     yay:  () => [659.25, 987.77].forEach((f, i) => tone(f, i * 0.08, 0.3, 'sine', 0.05)),
     chime: () => [523.25, 659.25, 783.99, 1046.5, 1318.5]
@@ -348,6 +388,7 @@ const Sound = (() => {
 
 (function start() {
   const C = loadContent();
+  Sound.init(C.sound);
   const state = { nick: '', message: '', day: null, time: null, label: null, furniture: false };
 
   const scenes = { ask: $('#sceneAsk'), plan: $('#scenePlan'), done: $('#sceneDone') };

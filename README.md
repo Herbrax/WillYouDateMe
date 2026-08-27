@@ -50,8 +50,9 @@ python3 build.py
 ```
 
 That refreshes the copy baked into `app.js` (what the page actually reads) and
-rebuilds `dist/hey-little-fairy.html`, a single self-contained file you can
-send to someone directly.
+rebuilds `dist/`, a standalone copy of the page — markup, styles and script in
+one `hey-little-fairy.html`, with `bunnyhop.mp3` copied alongside it. Send
+someone the folder, not just the html, or it arrives silent.
 
 ```json
 "note": {
@@ -155,8 +156,21 @@ it prints the mail to the console and keeps a copy in `localStorage` under
 | `app.js` | the fleeing button, the picker, the canvas petals, the mail |
 | `content.json` | every word |
 | `build.py` | compiles the words in, builds `dist/` |
+| `bunnyhop.mp3` | the loop behind the page |
 | `.nojekyll` | tells GitHub Pages to serve the files untouched |
 | `CNAME` | the custom domain, read by GitHub Pages |
 
-The sound toggle (top right) is off by default and synthesises its tones with
-the Web Audio API, so there are no audio files.
+## The sound
+
+The toggle (top right) starts **on** and loops `bunnyhop.mp3` at 20% volume.
+The little blips and the confirmation chime are still synthesised with the Web
+Audio API, and the same toggle governs them.
+
+```json
+"sound": { "track": "bunnyhop.mp3", "volume": 0.2, "defaultOn": true }
+```
+
+> "On by default" cannot mean sound on load — no browser lets a page start
+> audio before the visitor has interacted with it. So the page tries, and if it
+> is refused it starts on the first gesture instead: pressing Yes, chasing the
+> No button, any key. The button reads on throughout.

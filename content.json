@@ -37,6 +37,14 @@
     "dismiss": "oops \u2014 let me try again"
   },
 
+  "sound": {
+    "track": "bunnyhop.mp3",
+    "volume": 0.2,
+    "defaultOn": true,
+    "onTitle": "Sound on",
+    "offTitle": "Sound off"
+  },
+
   "plan": {
     "title": "So — when?",
     "subtitle": "Four small things and it's official.",

@@ -8,7 +8,7 @@
 
 Run this after editing content.json.
 """
-import json, pathlib, re
+import json, pathlib, re, shutil
 
 root = pathlib.Path(__file__).parent
 content = json.loads((root / 'content.json').read_text())
@@ -26,6 +26,9 @@ if n != 1:
 (root / 'app.js').write_text(app)
 
 # ── 2. inline into one page ───────────────────────────────────
+# The page is one file, but the music sits next to it rather than inside it —
+# base64 in the markup costs a third more bytes and blocks the first paint.
+
 html = (root / 'index.html').read_text()
 css = (root / 'styles.css').read_text()
 
@@ -57,4 +60,10 @@ dist = root / 'dist'
 dist.mkdir(exist_ok=True)
 target = dist / 'hey-little-fairy.html'
 target.write_text(out)
+
+track = root / content.get('sound', {}).get('track', '')
+if track.is_file():
+    shutil.copy2(track, dist / track.name)
+elif content.get('sound', {}).get('track'):
+    print(f'  ! {track.name} not found — the built page will be silent')
 print(f'synced app.js fallback  ·  wrote {target.relative_to(root)} ({len(out):,} bytes)')
