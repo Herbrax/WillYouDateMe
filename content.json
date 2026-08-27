@@ -1,0 +1,102 @@
+{
+  "_readme": "Every word in the app lives here. Edit, save, reload..",
+
+  "note": {
+    "lines": [
+      "Hey little fairy,",
+      "I like spending time with you,",
+      "let's go on a date"
+    ],
+    "signature": "— Simo"
+  },
+
+  "buttons": {
+    "yes": "Yes",
+    "no": "No"
+  },
+
+  "refusals": [
+    "No", "Nope", "Not this one", "Try again", "Almost!", "Nice try",
+    "Hmm no", "Catch me", "Nah", "Still no", "You sure?", "Give up?"
+  ],
+
+  "nudges": [
+    "", "", "the no button is shy.",
+    "", "it really does not want to be pressed.",
+    "", "", "you can stop chasing it, you know.",
+    "", "it is getting smaller. take the hint."
+  ],
+
+  "nickname": {
+    "label": "What nickname did you give me?",
+    "placeholder": "you know the one",
+    "answer": "Mo",
+    "hint": "The nickname first.",
+    "wrongTitle": "You're not Tati!",
+    "wrongBody": "Go away you harlot! Shoo shoo! \ud83d\ude1d",
+    "dismiss": "oops \u2014 let me try again"
+  },
+
+  "plan": {
+    "title": "So — when?",
+    "subtitle": "Four small things and it's official.",
+    "messageLabel": "Say something back",
+    "messagePlaceholder": "Anything you want. Or nothing at all.",
+    "dayLabel": "Pick a day",
+    "timeLabel": "Pick a time",
+    "otherTime": "Other",
+    "customTimeLabel": "Your time",
+    "confirm": "Confirm",
+    "sendingLabel": "Sending…",
+    "emptyHint": "Pick a day and a time.",
+    "dayOnlyHint": "Now a time.",
+    "tomorrow": "Tmrw",
+    "daysAhead": 12
+  },
+
+  "times": [
+    { "time": "10:00", "label": "coffee" },
+    { "time": "12:30", "label": "lunch" },
+    { "time": "15:00", "label": "a walk" },
+    { "time": "18:30", "label": "golden hour" },
+    { "time": "20:00", "label": "dinner" },
+    { "time": "22:00", "label": "stargazing" }
+  ],
+
+  "secret": {
+    "latch": "\ud83d\udd29",
+    "latchLabel": "There is one more thing you could pick",
+    "activity": "come build furniture",
+    "sub": "allen key included",
+    "unpicked": "the boring way"
+  },
+
+  "done": {
+    "heartLines": ["yes", "♡"],
+    "title": "It's a *date.*",
+    "whenLabel": "When",
+    "whatLabel": "What",
+    "noteLabel": "You said",
+    "fallbackActivity": "just the two of you",
+    "sending": "Sending the note…",
+    "sent": "The note is on its way",
+    "mockNote": "(mocked — logged to the console)",
+    "failed": "The note did not get through",
+    "again": "start over"
+  },
+
+  "email": {
+    "recipient": "herbrax212@gmail.com",
+    "endpoint": null,
+    "emailjs": {
+      "publicKey": "GBk_Bz7_Q8cZU6TcT",
+      "serviceId": "service_hzaatpy",
+      "templateId": "template_ih5vxot"
+    },
+    "fromName": "Hey Little Fairy",
+    "subjectPrefix": "It's a date",
+    "opening": "They said yes.",
+    "noteLabel": "Their note:",
+    "signoff": "\u2014 sent from the heart-shaped post-it"
+  }
+}
