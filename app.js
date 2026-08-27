@@ -343,9 +343,24 @@ const Sound = (() => {
     btn.title = on ? cfg.onTitle : cfg.offTitle;
   };
 
-  // Rejects while the page has not been interacted with — that is the autoplay
-  // policy talking, not an error, so it is swallowed and retried on the gesture.
-  const play = () => (on && music.src ? music.play().catch(() => {}) : Promise.resolve());
+  const play = () => (on && music.src ? music.play() : Promise.resolve());
+
+  // Browsers grant user activation when a gesture *completes* — pointerup,
+  // click, touchend, keyup — not when it starts, and the No button's
+  // pointerdown handler calls preventDefault(), which suppresses activation
+  // for taps that land on it. So listen wide, listen on the capture phase so
+  // nothing downstream can swallow the event, and keep listening until a
+  // play() actually resolves rather than assuming the first try took.
+  const GESTURES = ['pointerup', 'click', 'touchend', 'keyup', 'pointerdown', 'keydown'];
+
+  function armUnlock() {
+    const disarm = () => GESTURES.forEach((ev) => window.removeEventListener(ev, unlock, true));
+    function unlock() {
+      if (!on) { disarm(); return; }
+      play().then(disarm).catch(() => {});   // still refused — wait for the next one
+    }
+    GESTURES.forEach((ev) => window.addEventListener(ev, unlock, true));
+  }
 
   function init(sound) {
     cfg = sound;
@@ -354,24 +369,13 @@ const Sound = (() => {
     music.volume = clamp(sound.volume ?? 0.2, 0, 1);
     on = Boolean(sound.defaultOn);
     paint();
-    if (!on) return;
-
-    music.play().catch(() => {
-      // Blocked. Start on whatever the first gesture turns out to be —
-      // pressing Yes, chasing No, or a key.
-      const events = ['pointerdown', 'keydown', 'touchstart'];
-      const unlock = () => {
-        events.forEach((ev) => window.removeEventListener(ev, unlock));
-        play();
-      };
-      events.forEach((ev) => window.addEventListener(ev, unlock, { passive: true }));
-    });
+    if (on) play().catch(armUnlock);
   }
 
   btn.addEventListener('click', () => {
     on = !on;
     paint();
-    if (on) { ensure(); play(); tone(880, 0, 0.18, 'triangle', 0.04); }
+    if (on) { ensure(); play().catch(armUnlock); tone(880, 0, 0.18, 'triangle', 0.04); }
     else music.pause();          // pause, not stop: it picks up where it left off
   });
 
