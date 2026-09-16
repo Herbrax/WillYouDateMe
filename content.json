@@ -93,6 +93,14 @@
     "again": "start over"
   },
 
+  "calendar": {
+    "button": "Add to calendar",
+    "title": "It's a date \u2661",
+    "durationMinutes": 90,
+    "filename": "its-a-date.ics",
+    "noteLabel": "They said:"
+  },
+
   "email": {
     "recipient": "herbrax212@gmail.com",
     "endpoint": null,

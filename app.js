@@ -6,6 +6,7 @@
 const $  = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const pad2 = (n) => String(n).padStart(2, '0');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => (
@@ -133,6 +134,13 @@ const FALLBACK = {
     "mockNote": "(mocked — logged to the console)",
     "failed": "The note did not get through",
     "again": "start over"
+  },
+  "calendar": {
+    "button": "Add to calendar",
+    "title": "It's a date ♡",
+    "durationMinutes": 90,
+    "filename": "its-a-date.ics",
+    "noteLabel": "They said:"
   },
   "email": {
     "recipient": "herbrax212@gmail.com",
@@ -774,6 +782,78 @@ const Sound = (() => {
     return { ok: true, id: `mock_${Date.now()}`, mocked: true };
   }
 
+  /* ── add to calendar ────────────────────────────────────── */
+
+  // RFC 5545. Times are written without a zone or a trailing Z, which makes
+  // them "floating": 6:30pm stays 6:30pm wherever the calendar is read, which
+  // is what a date at golden hour means.
+  const icsTime = (d) => [
+    d.getFullYear(), pad2(d.getMonth() + 1), pad2(d.getDate()), 'T',
+    pad2(d.getHours()), pad2(d.getMinutes()), '00',
+  ].join('');
+
+  const icsText = (v) => String(v)
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+
+  // Lines cap at 75 octets, continuations start with a space.
+  const fold = (line) => {
+    const out = [];
+    let buf = '';
+    for (const ch of line) {
+      const next = buf + ch;
+      if (new TextEncoder().encode(next).length > 74) { out.push(buf); buf = ' ' + ch; }
+      else buf = next;
+    }
+    out.push(buf);
+    return out.join('\r\n');
+  };
+
+  function buildIcs(when) {
+    const end = new Date(when.dt.getTime() + (C.calendar.durationMinutes || 90) * 60000);
+    const stamp = new Date().toISOString().replace(/[-:]|\.\d{3}/g, '');
+
+    const desc = [`${C.done.whatLabel}: ${state.label || C.done.fallbackActivity}`];
+    if (state.message) desc.push(`${C.calendar.noteLabel} "${state.message}"`);
+
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//willyoudateme//EN',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      `UID:${stamp}-${Math.random().toString(36).slice(2, 10)}@willyoudateme`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART:${icsTime(when.dt)}`,
+      `DTEND:${icsTime(end)}`,
+      `SUMMARY:${icsText(C.calendar.title)}`,
+      `DESCRIPTION:${icsText(desc.join('\n'))}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT1H',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${icsText(C.calendar.title)}`,
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ];
+    return lines.map(fold).join('\r\n') + '\r\n';
+  }
+
+  const calBtn = $('#calBtn');
+  let calUrl = null;
+  calBtn.textContent = C.calendar.button;
+
+  function offerCalendar(when) {
+    if (calUrl) URL.revokeObjectURL(calUrl);
+    calUrl = URL.createObjectURL(new Blob([buildIcs(when)], { type: 'text/calendar;charset=utf-8' }));
+    calBtn.href = calUrl;
+    calBtn.download = C.calendar.filename;
+  }
+
+  calBtn.addEventListener('click', () => Sound.blip());
+
   function buildPayload(when) {
     const lines = [C.email.opening, '', `When:  ${when.text}`,
                    `What:  ${state.label || C.done.fallbackActivity}`,
@@ -811,6 +891,8 @@ const Sound = (() => {
       $('#rNote').textContent = `“${state.message}”`;
       $('#rNoteRow').hidden = false;
     }
+
+    offerCalendar(when);
 
     setScene('done');
     window.scrollTo({ top: 0 });
