@@ -137,6 +137,7 @@ const FALLBACK = {
   },
   "calendar": {
     "button": "Add to calendar",
+    "glyph": "🌷",
     "title": "It's a date ♡",
     "durationMinutes": 90,
     "filename": "its-a-date.ics",
@@ -222,7 +223,7 @@ const Fx = (() => {
     if (parts.length > cap) parts.splice(0, parts.length - cap);
   }
 
-  function burst(x, y, n = 40) {
+  function burst(x, y, n = 40, pool = ALL) {
     const k = window.innerWidth < 520 ? 0.65 : 1;
     for (let i = 0; i < n * k; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -233,7 +234,27 @@ const Fx = (() => {
         vy: Math.sin(a) * sp - 3,
         g: 0.14, drag: 0.965,
         size: 15 + Math.random() * 21,
+        char: pick(pool),
         fade: 0.004,
+      });
+    }
+  }
+
+  // Flowers only, thrown upward in a fan rather than a sphere, so it reads as
+  // a bouquet opening out of the button instead of an explosion.
+  function bloom(x, y, n = 30) {
+    const k = window.innerWidth < 520 ? 0.7 : 1;
+    for (let i = 0; i < n * k; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.1;
+      const sp = 4 + Math.random() * 9;
+      spawn({
+        x: x + (Math.random() - 0.5) * 40, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        g: 0.11, drag: 0.972,
+        size: 13 + Math.random() * 18,
+        char: pick(FLOWERS),
+        swayAmp: 0.7, fade: 0.0026,
       });
     }
   }
@@ -312,7 +333,7 @@ const Fx = (() => {
   }
   requestAnimationFrame(frame);
 
-  return { burst, celebrate };
+  return { burst, bloom, celebrate };
 })();
 
 /* ── a little sound ───────────────────────────────────────── */
@@ -799,12 +820,13 @@ const Sound = (() => {
     .replace(/\r?\n/g, '\\n');
 
   // Lines cap at 75 octets, continuations start with a space.
+  const utf8 = new TextEncoder();
   const fold = (line) => {
     const out = [];
     let buf = '';
     for (const ch of line) {
       const next = buf + ch;
-      if (new TextEncoder().encode(next).length > 74) { out.push(buf); buf = ' ' + ch; }
+      if (utf8.encode(next).length > 74) { out.push(buf); buf = ' ' + ch; }
       else buf = next;
     }
     out.push(buf);
@@ -843,7 +865,14 @@ const Sound = (() => {
 
   const calBtn = $('#calBtn');
   let calUrl = null;
-  calBtn.textContent = C.calendar.button;
+
+  const glyph = document.createElement('span');
+  glyph.className = 'btn__glyph';
+  glyph.setAttribute('aria-hidden', 'true');
+  glyph.textContent = C.calendar.glyph;
+  const label = document.createElement('span');
+  label.textContent = C.calendar.button;
+  calBtn.replaceChildren(glyph, label);
 
   function offerCalendar(when) {
     if (calUrl) URL.revokeObjectURL(calUrl);
@@ -852,7 +881,18 @@ const Sound = (() => {
     calBtn.download = C.calendar.filename;
   }
 
-  calBtn.addEventListener('click', () => Sound.blip());
+  calBtn.addEventListener('click', () => {
+    const r = calBtn.getBoundingClientRect();
+    Fx.bloom(r.left + r.width / 2, r.top + r.height / 2, reduced ? 10 : 34);
+    calBtn.classList.remove('is-picked');
+    void calBtn.offsetWidth;                 // restart the squish on a second press
+    calBtn.classList.add('is-picked');
+    Sound.yay();
+  });
+
+  // bob-cal is infinite so it never fires this — only the press squish does,
+  // and dropping the class hands the idle bob back.
+  calBtn.addEventListener('animationend', () => calBtn.classList.remove('is-picked'));
 
   function buildPayload(when) {
     const lines = [C.email.opening, '', `When:  ${when.text}`,

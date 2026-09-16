@@ -104,6 +104,31 @@ Once it is on, it outranks whatever the time chip called the outing, and it is
 what shows up on the receipt and in the email. Clicking it again hands the
 label back to the time chip.
 
+## Add to calendar
+
+The confirmation screen offers an **Add to calendar** button. It builds an
+RFC 5545 `.ics` in the browser and hands it over as a download, so the event
+lands in the calendar of whoever filled the form in — Apple Calendar, Google
+Calendar, Outlook, anything that reads `.ics`.
+
+```json
+"calendar": {
+  "button": "Add to calendar",
+  "glyph": "\ud83c\udf37",
+  "title": "It's a date \u2661",
+  "durationMinutes": 90,
+  "filename": "its-a-date.ics"
+}
+```
+
+Pressing it throws a handful of flowers up out of the button — the same canvas
+that rains petals on the confirmation, but flowers only, no hearts. The
+activity and the note go in the event's description, and it carries a reminder
+an hour before. Times are written **floating** — no zone, no
+trailing `Z` — so 6:30pm stays 6:30pm wherever the calendar happens to be
+read, which is what a date at golden hour means. There is no server involved;
+nothing about the event is sent anywhere.
+
 ## The email
 
 Confirming calls `sendDateRequest()` in [`app.js`](app.js), which posts to

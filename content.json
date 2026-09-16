@@ -95,6 +95,7 @@
 
   "calendar": {
     "button": "Add to calendar",
+    "glyph": "\ud83c\udf37",
     "title": "It's a date \u2661",
     "durationMinutes": 90,
     "filename": "its-a-date.ics",
