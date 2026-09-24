@@ -269,7 +269,12 @@ function clean(date) {
   const message = typeof date.message === 'string' ? date.message.trim().slice(0, MAX.message) : '';
   const label = str(date.label, MAX.label);
 
-  return { day, time, message, label: label ?? null };
+  // The pretty strings above are what a person reads; these two are what the
+  // edit page needs to put the day and time pickers back where they were.
+  const dayISO = /^\d{4}-\d{2}-\d{2}$/.test(date.dayISO) ? date.dayISO : null;
+  const timeISO = /^\d{2}:\d{2}$/.test(date.timeISO) ? date.timeISO : null;
+
+  return { day, time, dayISO, timeISO, message, label: label ?? null };
 }
 
 async function readJson(request) {

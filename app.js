@@ -146,6 +146,23 @@ const FALLBACK = {
     "filename": "its-a-date.ics",
     "noteLabel": "They said:"
   },
+  "edit": {
+    "glyph": "🖊",
+    "openLabel": "Change a plan you already made",
+    "title": "Change the plan",
+    "body": "The code from your note, and the nickname.",
+    "codeLabel": "Code",
+    "codePlaceholder": "091",
+    "nickLabel": "Nickname",
+    "nickPlaceholder": "you know the one",
+    "unlock": "Open it",
+    "cancel": "never mind",
+    "notFound": "Nothing matches that code and nickname.",
+    "trouble": "Could not reach it. Try again in a moment.",
+    "stale": "This plan changed while you had it open. Open it again.",
+    "expired": "That took a while — open it again.",
+    "confirmEdit": "Save the change"
+  },
   "api": {
     "_comment": "The Cloudflare Worker that stores the plans. Public by nature — the nickname is checked on its side, not here.",
     "base": "https://willyoudateme-api.simo-hakim.workers.dev"
@@ -470,6 +487,19 @@ const Sound = (() => {
   $('#lblSecret').textContent = C.secret.activity;
   $('#lblSecretSub').textContent = C.secret.sub;
 
+  $('#editGlyph').textContent = C.edit.glyph;
+  $('#unlockGlyph').textContent = C.edit.glyph;
+  $('#lblEditOpen').textContent = C.edit.openLabel;
+  $('#editOpen').title = C.edit.openLabel;
+  $('#unlockTitle').textContent = C.edit.title;
+  $('#unlockBody').textContent = C.edit.body;
+  $('#lblUnlockCode').textContent = C.edit.codeLabel;
+  $('#unlockCode').placeholder = C.edit.codePlaceholder;
+  $('#lblUnlockNick').textContent = C.edit.nickLabel;
+  $('#unlockNick').placeholder = C.edit.nickPlaceholder;
+  $('#unlockBtn').textContent = C.edit.unlock;
+  $('#unlockCancel').textContent = C.edit.cancel;
+
   $('#shooTitle').textContent = C.nickname.wrongTitle;
   $('#shooBody').textContent = C.nickname.wrongBody;
   $('#shooBtn').textContent = C.nickname.dismiss;
@@ -688,6 +718,108 @@ const Sound = (() => {
     refresh();
   });
 
+  /* ── changing a plan already made ───────────────────────── */
+
+  const unlockBox = $('#unlock');
+  const unlockCode = $('#unlockCode');
+  const unlockNick = $('#unlockNick');
+  const unlockError = $('#unlockError');
+  const unlockBtn = $('#unlockBtn');
+
+  // Holds { id, token } while a stored plan is open for changes, and is null
+  // the rest of the time. Confirm reads it to decide which way to send.
+  let editing = null;
+
+  function openUnlock() {
+    unlockError.textContent = '';
+    unlockCode.value = '';
+    unlockNick.value = '';
+    unlockBox.hidden = false;
+    requestAnimationFrame(() => unlockBox.classList.add('is-on'));
+    unlockCode.focus();
+  }
+
+  function closeUnlock() {
+    unlockBox.classList.remove('is-on');
+    setTimeout(() => { unlockBox.hidden = true; }, 180);
+  }
+
+  $('#editOpen').addEventListener('click', () => { Sound.blip(); openUnlock(); });
+  $('#unlockCancel').addEventListener('click', closeUnlock);
+  unlockBox.addEventListener('click', (e) => { if (e.target === unlockBox) closeUnlock(); });
+
+  $('#unlockForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!(C.api && C.api.base)) return;
+
+    unlockBtn.disabled = true;
+    unlockError.textContent = '';
+    try {
+      const res = await fetch(`${C.api.base}/unlock`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: unlockCode.value.trim(), nickname: unlockNick.value.trim() }),
+      });
+      // The worker answers 404 for a wrong code and a wrong nickname alike, so
+      // this cannot be used to find out which codes exist.
+      if (res.status === 404) { unlockError.textContent = C.edit.notFound; return; }
+      if (!res.ok) { unlockError.textContent = C.edit.trouble; return; }
+
+      const { id, date, token } = await res.json();
+      editing = { id, token };
+      fillPlan(date, unlockNick.value.trim());
+      closeUnlock();
+      setScene('plan');
+      window.scrollTo({ top: 0 });
+      Sound.blip();
+    } catch {
+      unlockError.textContent = C.edit.trouble;
+    } finally {
+      unlockBtn.disabled = false;
+    }
+  });
+
+  // Puts a stored plan back into the form it was made with.
+  function fillPlan(date, nick) {
+    state.nick = nick;
+    nickname.value = nick;
+    nickname.closest('.field').classList.remove('has-error');
+
+    state.message = date.message || '';
+    message.value = state.message;
+    count.textContent = String(state.message.length);
+
+    state.day = date.dayISO || null;
+    $$('.day', daysEl).forEach((b) => {
+      const on = Boolean(state.day) && b.dataset.iso === state.day;
+      b.setAttribute('aria-checked', String(on));
+      if (on) b.scrollIntoView({ block: 'nearest', inline: 'center' });
+    });
+
+    state.time = date.timeISO || null;
+    state.label = date.label || null;
+    const chips = $$('.time', timesEl);
+    chips.forEach((b) => b.setAttribute('aria-checked', 'false'));
+    const match = chips.find((b) => b.querySelector('b').textContent === state.time);
+    if (match) {
+      match.setAttribute('aria-checked', 'true');
+      $('#customWrap').hidden = true;
+    } else if (state.time) {
+      // A time none of the chips offer — the custom field is where it belongs.
+      chips[chips.length - 1].setAttribute('aria-checked', 'true');
+      $('#customWrap').hidden = false;
+      $('#customTime').value = state.time;
+    }
+
+    confirmBtn.textContent = C.edit.confirmEdit;
+    refresh();
+  }
+
+  function stopEditing() {
+    editing = null;
+    confirmBtn.textContent = C.plan.confirm;
+  }
+
   function openShoo() {
     const field = nickname.closest('.field');
     field.classList.remove('has-error');
@@ -766,6 +898,8 @@ const Sound = (() => {
     const when = prettyWhen();
     const ready = Boolean(when) && state.nick.length > 0;
     confirmBtn.disabled = !ready;
+    // Any change clears a failed-save message rather than leaving it red.
+    summary.classList.remove('is-error');
     summary.classList.toggle('is-set', Boolean(when));
     summary.textContent = when
       ? `${when.text}${state.label ? ` — ${state.label}` : ''}`
@@ -780,6 +914,17 @@ const Sound = (() => {
   // The Worker keeps the plan and hands back the code she needs to change it
   // later. The nickname is checked on its side — the check in this file is
   // only there to be rude quickly, and decides nothing.
+  // day/time are the words she'd read; dayISO/timeISO are the same moment in a
+  // form the pickers can be put back to when the plan is opened again.
+  const planBody = (when) => ({
+    day: when.day,
+    time: when.time,
+    dayISO: state.day,
+    timeISO: state.time,
+    message: state.message,
+    label: state.label || C.done.fallbackActivity,
+  });
+
   async function saveDate(when) {
     const base = C.api && C.api.base;
     if (!base) return null;
@@ -787,17 +932,23 @@ const Sound = (() => {
     const res = await fetch(`${base}/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nickname: state.nick,
-        date: {
-          day: when.day,
-          time: when.time,
-          message: state.message,
-          label: state.label || C.done.fallbackActivity,
-        },
-      }),
+      body: JSON.stringify({ nickname: state.nick, date: planBody(when) }),
     });
     if (!res.ok) throw new Error(`the worker replied ${res.status}`);
+    return res.json();
+  }
+
+  // Unlike saving a new plan, this one is not allowed to fail quietly: if it
+  // does not land, she must not be shown a receipt saying it did.
+  async function saveEdit(when) {
+    const res = await fetch(`${C.api.base}/date`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: editing.token, date: planBody(when) }),
+    });
+    if (res.status === 409) throw new Error(C.edit.stale);
+    if (res.status === 401) throw new Error(C.edit.expired);
+    if (!res.ok) throw new Error(C.edit.trouble);
     return res.json();
   }
 
@@ -973,6 +1124,21 @@ const Sound = (() => {
     confirmBtn.classList.add('is-sending');
     confirmBtn.textContent = C.plan.sendingLabel;
 
+    // A change has to land before it is celebrated — a receipt for an edit
+    // that did not save would be a lie. A brand new plan is the other way
+    // round further down: the moment matters more than the record.
+    if (editing) {
+      try {
+        await saveEdit(when);
+      } catch (err) {
+        summary.textContent = err.message;
+        summary.classList.add('is-error');
+        confirmBtn.classList.remove('is-sending');
+        confirmBtn.textContent = C.edit.confirmEdit;
+        return;
+      }
+    }
+
     $('#rWhen').textContent = when.text;
     $('#rWhat').textContent = state.label || C.done.fallbackActivity;
     if (state.message) {
@@ -992,12 +1158,15 @@ const Sound = (() => {
     // Storing the plan is allowed to fail. A worker that is down, blocked or
     // slow must not cost her the email or the flowers — she just does not get
     // a code, and the plan lives only in the mail.
-    let saved = null;
-    try {
-      saved = await saveDate(when);
-    } catch (err) {
-      console.warn('the plan was not stored:', err);
+    let saved = editing ? { id: editing.id } : null;
+    if (!editing) {
+      try {
+        saved = await saveDate(when);
+      } catch (err) {
+        console.warn('the plan was not stored:', err);
+      }
     }
+    stopEditing();
     if (saved && saved.id) {
       $('#rCode').textContent = saved.id;
       $('#rCodeRow').hidden = false;
@@ -1018,6 +1187,7 @@ const Sound = (() => {
   });
 
   $('#againBtn').addEventListener('click', () => {
+    stopEditing();
     state.nick = ''; state.message = ''; state.day = null;
     state.time = null; state.label = null; state.furniture = false;
     nickname.value = ''; nickname.closest('.field').classList.remove('has-error');

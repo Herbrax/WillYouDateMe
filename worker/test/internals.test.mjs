@@ -48,8 +48,22 @@ test('anything that could escape the data folder is nothing', () => {
 });
 
 test('only the known fields survive cleaning', () => {
-  const out = I.clean({ day: ' Friday ', time: '8pm', message: 'hi', label: 'dinner', evil: 'x', id: 'date999' });
-  assert.deepEqual(out, { day: 'Friday', time: '8pm', message: 'hi', label: 'dinner' });
+  const out = I.clean({
+    day: ' Friday ', time: '8pm', message: 'hi', label: 'dinner',
+    dayISO: '2026-09-27', timeISO: '18:30', evil: 'x', id: 'date999',
+  });
+  assert.deepEqual(out, {
+    day: 'Friday', time: '8pm', dayISO: '2026-09-27', timeISO: '18:30',
+    message: 'hi', label: 'dinner',
+  });
+});
+
+test('a malformed machine-readable day or time becomes null', () => {
+  const out = I.clean({ day: 'Fri', time: '8pm', dayISO: '27/09/2026', timeISO: 'half six' });
+  assert.equal(out.dayISO, null);
+  assert.equal(out.timeISO, null);
+  // ...and their absence never invalidates the plan itself
+  assert.equal(I.clean({ day: 'Fri', time: '8pm' }).dayISO, null);
 });
 
 test('a plan with no day or time is not a plan', () => {

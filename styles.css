@@ -116,6 +116,58 @@ button, textarea, input { font: inherit; touch-action: manipulation; }
   50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.06); }
 }
 
+/* ── the pen ──────────────────────────────────────────────── */
+
+/* Same button as the sound toggle, moved to the opposite corner. Compound
+   selector on purpose: .sound sets top/right further down this file, and at
+   equal specificity it would win on order alone.
+   Only on the front door — once a plan is open, changing it is what you are
+   already doing. */
+.sound.pen {
+  top: auto;
+  right: auto;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  left: max(14px, env(safe-area-inset-left));
+  font-size: 14px;
+}
+
+body[data-scene="plan"] .pen,
+body[data-scene="done"] .pen { display: none; }
+
+.unlock__form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.unlock__field {
+  display: grid;
+  gap: 5px;
+}
+
+.unlock__field > span {
+  font-family: "Karla", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.unlock__form .input { font-size: 16px; }   /* 16px or iOS zooms on focus */
+
+.unlock__error {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 13.5px;
+  color: var(--rose);
+}
+
+.unlock__error:empty { min-height: 0; }
+
+.unlock .btn--shoo { width: 100%; }
+
 /* The code is the thing to read; the reason for keeping it sits under it,
    out of the way, rather than wrapping around it. */
 #rCode {
@@ -611,6 +663,7 @@ body[data-scene="done"] .credit { display: none; }
   color: var(--ink-soft);
 }
 .summary.is-set { color: var(--ink); }
+.summary.is-error { color: var(--rose); font-family: "Karla", sans-serif; font-size: 14px; }
 
 .btn--confirm {
   background: var(--rose);

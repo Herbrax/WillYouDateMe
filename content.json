@@ -105,6 +105,24 @@
     "noteLabel": "They said:"
   },
 
+  "edit": {
+    "glyph": "🖊",
+    "openLabel": "Change a plan you already made",
+    "title": "Change the plan",
+    "body": "The code from your note, and the nickname.",
+    "codeLabel": "Code",
+    "codePlaceholder": "091",
+    "nickLabel": "Nickname",
+    "nickPlaceholder": "you know the one",
+    "unlock": "Open it",
+    "cancel": "never mind",
+    "notFound": "Nothing matches that code and nickname.",
+    "trouble": "Could not reach it. Try again in a moment.",
+    "stale": "This plan changed while you had it open. Open it again.",
+    "expired": "That took a while — open it again.",
+    "confirmEdit": "Save the change"
+  },
+
   "api": {
     "_comment": "The Cloudflare Worker that stores the plans. Public by nature — the nickname is checked on its side, not here.",
     "base": "https://willyoudateme-api.simo-hakim.workers.dev"

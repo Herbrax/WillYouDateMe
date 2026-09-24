@@ -28,6 +28,11 @@
   <span class="sr-only">Toggle sound</span>
 </button>
 
+<button id="editOpen" class="sound pen" type="button">
+  <span aria-hidden="true" id="editGlyph"></span>
+  <span class="sr-only" id="lblEditOpen"></span>
+</button>
+
 <main class="stage">
 
   <!-- ─────────── scene: the question ─────────── -->
@@ -147,6 +152,27 @@
 </main>
 
 <p class="credit">By Tatiana <span>(Muse)</span> &amp; Simo <span>(Dev)</span></p>
+
+<div class="shoo" id="unlock" hidden>
+  <div class="shoo__box unlock" role="dialog" aria-modal="true" aria-labelledby="unlockTitle" aria-describedby="unlockBody">
+    <p class="shoo__broom" aria-hidden="true" id="unlockGlyph"></p>
+    <h2 class="shoo__title" id="unlockTitle"></h2>
+    <p class="shoo__body" id="unlockBody"></p>
+    <form id="unlockForm" class="unlock__form">
+      <label class="unlock__field">
+        <span id="lblUnlockCode"></span>
+        <input class="input" id="unlockCode" type="text" inputmode="numeric" maxlength="8" autocomplete="off" required>
+      </label>
+      <label class="unlock__field">
+        <span id="lblUnlockNick"></span>
+        <input class="input" id="unlockNick" type="text" maxlength="40" autocomplete="off" required>
+      </label>
+      <p class="unlock__error" id="unlockError" role="status" aria-live="polite"></p>
+      <button class="btn btn--shoo" id="unlockBtn" type="submit"></button>
+      <button class="linkbtn" id="unlockCancel" type="button"></button>
+    </form>
+  </div>
+</div>
 
 <div class="shoo" id="shoo" hidden>
   <div class="shoo__box" role="alertdialog" aria-modal="true" aria-labelledby="shooTitle" aria-describedby="shooBody">
