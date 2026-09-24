@@ -144,7 +144,8 @@ const FALLBACK = {
     "title": "It's a date ♡",
     "durationMinutes": 90,
     "filename": "its-a-date.ics",
-    "noteLabel": "They said:"
+    "noteLabel": "They said:",
+    "codeLabel": "Date code"
   },
   "edit": {
     "glyph": "🖊",
@@ -152,7 +153,7 @@ const FALLBACK = {
     "title": "Change the plan",
     "body": "The code from your note, and the nickname.",
     "codeLabel": "Code",
-    "codePlaceholder": "091",
+    "codePlaceholder": "000",
     "nickLabel": "Nickname",
     "nickPlaceholder": "you know the one",
     "unlock": "Open it",
@@ -177,7 +178,10 @@ const FALLBACK = {
     },
     "fromName": "Hey Little Fairy",
     "subjectPrefix": "It's a date",
+    "subjectPrefixEdited": "Plan changed",
     "opening": "They said yes.",
+    "openingEdited": "They changed the plan.",
+    "codeLabel": "Code",
     "noteLabel": "Their note:",
     "signoff": "— sent from the heart-shaped post-it"
   }
@@ -1029,12 +1033,15 @@ const Sound = (() => {
     return out.join('\r\n');
   };
 
-  function buildIcs(when) {
+  function buildIcs(when, code) {
     const end = new Date(when.dt.getTime() + (C.calendar.durationMinutes || 90) * 60000);
     const stamp = new Date().toISOString().replace(/[-:]|\.\d{3}/g, '');
 
     const desc = [`${C.done.whatLabel}: ${state.label || C.done.fallbackActivity}`];
     if (state.message) desc.push(`${C.calendar.noteLabel} "${state.message}"`);
+    // Put the code in the event too, so it survives in her calendar even if
+    // the mail and the page are both long gone.
+    if (code) desc.push(`${C.calendar.codeLabel}: ${code}`);
 
     const lines = [
       'BEGIN:VCALENDAR',
@@ -1070,9 +1077,11 @@ const Sound = (() => {
   label.textContent = C.calendar.button;
   calBtn.replaceChildren(glyph, label);
 
-  function offerCalendar(when) {
+  // Called twice: once as the receipt appears so the button is never dead, and
+  // again once the code is known so it can go in the event.
+  function offerCalendar(when, code) {
     if (calUrl) URL.revokeObjectURL(calUrl);
-    calUrl = URL.createObjectURL(new Blob([buildIcs(when)], { type: 'text/calendar;charset=utf-8' }));
+    calUrl = URL.createObjectURL(new Blob([buildIcs(when, code)], { type: 'text/calendar;charset=utf-8' }));
     calBtn.href = calUrl;
     calBtn.download = C.calendar.filename;
   }
@@ -1090,20 +1099,27 @@ const Sound = (() => {
   // and dropping the class hands the idle bob back.
   calBtn.addEventListener('animationend', () => calBtn.classList.remove('is-picked'));
 
-  function buildPayload(when, code) {
-    const lines = [C.email.opening, '', `When:  ${when.text}`,
+  function buildPayload(when, code, edited) {
+    const lines = [edited ? C.email.openingEdited : C.email.opening, '',
+                   `When:  ${when.text}`,
                    `What:  ${state.label || C.done.fallbackActivity}`,
                    `Nickname:  ${state.nick}`];
     // The code only exists if the Worker answered. It rides along in the mail
     // so it is not lost the moment she closes the page.
-    if (code) lines.push(`Code:  ${code}`);
+    if (code) lines.push(`${C.email.codeLabel}:  ${code}`);
     if (state.message) lines.push('', C.email.noteLabel, `  "${state.message}"`);
     lines.push('', C.email.signoff);
+
+    // An edit is a different mail from a first yes — the subject has to say so
+    // at a glance, and carry the code of the plan that moved.
+    const prefix = edited
+      ? `${C.email.subjectPrefixEdited}${code ? ` (${code})` : ''}`
+      : C.email.subjectPrefix;
 
     return {
       to: C.email.recipient,
       from: C.email.fromName,
-      subject: `${C.email.subjectPrefix} — ${when.day} at ${when.time}`,
+      subject: `${prefix} — ${when.day} at ${when.time}`,
       body: lines.join('\n'),
       date: state.day,
       time: state.time,
@@ -1158,6 +1174,7 @@ const Sound = (() => {
     // Storing the plan is allowed to fail. A worker that is down, blocked or
     // slow must not cost her the email or the flowers — she just does not get
     // a code, and the plan lives only in the mail.
+    const wasEditing = Boolean(editing);
     let saved = editing ? { id: editing.id } : null;
     if (!editing) {
       try {
@@ -1167,13 +1184,16 @@ const Sound = (() => {
       }
     }
     stopEditing();
-    if (saved && saved.id) {
-      $('#rCode').textContent = saved.id;
+
+    const code = saved && saved.id;
+    if (code) {
+      $('#rCode').textContent = code;
       $('#rCodeRow').hidden = false;
+      offerCalendar(when, code);     // rebuild the event now the code is known
     }
 
     try {
-      const res = await sendDateRequest(buildPayload(when, saved && saved.id));
+      const res = await sendDateRequest(buildPayload(when, code, wasEditing));
       status.classList.add('is-sent');
       status.innerHTML = `<span class="dot" aria-hidden="true"></span> ${esc(C.done.sent)}` +
         (res.mocked ? ` <em class="muted">${esc(C.done.mockNote)}</em>` : '');
