@@ -129,6 +129,8 @@ const FALLBACK = {
     "whenLabel": "When",
     "whatLabel": "What",
     "noteLabel": "You said",
+    "codeLabel": "Your code",
+    "codeHint": "keep this to change the plan later",
     "fallbackActivity": "just the two of you",
     "sending": "Sending the note…",
     "sent": "The note is on its way",
@@ -143,6 +145,10 @@ const FALLBACK = {
     "durationMinutes": 90,
     "filename": "its-a-date.ics",
     "noteLabel": "They said:"
+  },
+  "api": {
+    "_comment": "The Cloudflare Worker that stores the plans. Public by nature — the nickname is checked on its side, not here.",
+    "base": "https://willyoudateme-api.simo-hakim.workers.dev"
   },
   "email": {
     "recipient": "herbrax212@gmail.com",
@@ -457,6 +463,8 @@ const Sound = (() => {
   $('#lblCustom').textContent = C.plan.customTimeLabel;
   $('#confirmBtn').textContent = C.plan.confirm;
 
+  $('#lblCode').textContent = C.done.codeLabel;
+  $('#lblCodeHint').textContent = C.done.codeHint;
   $('#secretGlyph').textContent = C.secret.latch;
   $('#lblSecretLatch').textContent = C.secret.latchLabel;
   $('#lblSecret').textContent = C.secret.activity;
@@ -767,6 +775,32 @@ const Sound = (() => {
 
   /* ── confirm → mock email ───────────────────────────────── */
 
+  /* ── storing the plan ───────────────────────────────────── */
+
+  // The Worker keeps the plan and hands back the code she needs to change it
+  // later. The nickname is checked on its side — the check in this file is
+  // only there to be rude quickly, and decides nothing.
+  async function saveDate(when) {
+    const base = C.api && C.api.base;
+    if (!base) return null;
+
+    const res = await fetch(`${base}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nickname: state.nick,
+        date: {
+          day: when.day,
+          time: when.time,
+          message: state.message,
+          label: state.label || C.done.fallbackActivity,
+        },
+      }),
+    });
+    if (!res.ok) throw new Error(`the worker replied ${res.status}`);
+    return res.json();
+  }
+
   async function sendDateRequest(payload) {
     if (C.email.endpoint) {
       const res = await fetch(C.email.endpoint, {
@@ -905,10 +939,13 @@ const Sound = (() => {
   // and dropping the class hands the idle bob back.
   calBtn.addEventListener('animationend', () => calBtn.classList.remove('is-picked'));
 
-  function buildPayload(when) {
+  function buildPayload(when, code) {
     const lines = [C.email.opening, '', `When:  ${when.text}`,
                    `What:  ${state.label || C.done.fallbackActivity}`,
                    `Nickname:  ${state.nick}`];
+    // The code only exists if the Worker answered. It rides along in the mail
+    // so it is not lost the moment she closes the page.
+    if (code) lines.push(`Code:  ${code}`);
     if (state.message) lines.push('', C.email.noteLabel, `  "${state.message}"`);
     lines.push('', C.email.signoff);
 
@@ -951,8 +988,23 @@ const Sound = (() => {
     Sound.chime();
 
     const status = $('#mailStatus');
+
+    // Storing the plan is allowed to fail. A worker that is down, blocked or
+    // slow must not cost her the email or the flowers — she just does not get
+    // a code, and the plan lives only in the mail.
+    let saved = null;
     try {
-      const res = await sendDateRequest(buildPayload(when));
+      saved = await saveDate(when);
+    } catch (err) {
+      console.warn('the plan was not stored:', err);
+    }
+    if (saved && saved.id) {
+      $('#rCode').textContent = saved.id;
+      $('#rCodeRow').hidden = false;
+    }
+
+    try {
+      const res = await sendDateRequest(buildPayload(when, saved && saved.id));
       status.classList.add('is-sent');
       status.innerHTML = `<span class="dot" aria-hidden="true"></span> ${esc(C.done.sent)}` +
         (res.mocked ? ` <em class="muted">${esc(C.done.mockNote)}</em>` : '');
@@ -977,6 +1029,7 @@ const Sound = (() => {
     $$('.day, .time').forEach((b) => b.setAttribute('aria-checked', 'false'));
     $('#customWrap').hidden = true;
     $('#rNoteRow').hidden = true;
+    $('#rCodeRow').hidden = true;
     $('#mailStatus').classList.remove('is-sent');
     $('#mailStatus').innerHTML = sendingHTML;
     refresh();

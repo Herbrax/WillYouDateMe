@@ -116,6 +116,22 @@ button, textarea, input { font: inherit; touch-action: manipulation; }
   50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.06); }
 }
 
+/* The code is the thing to read; the reason for keeping it sits under it,
+   out of the way, rather than wrapping around it. */
+#rCode {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+
+#lblCodeHint {
+  display: block;
+  margin-top: 1px;
+  font-size: 12.5px;
+  font-style: normal;
+  opacity: .75;
+}
+
 /* ── the signature ────────────────────────────────────────── */
 
 /* Sits above the stage but under the petals and the shoo, and never takes a

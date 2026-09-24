@@ -86,6 +86,8 @@
     "whenLabel": "When",
     "whatLabel": "What",
     "noteLabel": "You said",
+    "codeLabel": "Your code",
+    "codeHint": "keep this to change the plan later",
     "fallbackActivity": "just the two of you",
     "sending": "Sending the note…",
     "sent": "The note is on its way",
@@ -101,6 +103,11 @@
     "durationMinutes": 90,
     "filename": "its-a-date.ics",
     "noteLabel": "They said:"
+  },
+
+  "api": {
+    "_comment": "The Cloudflare Worker that stores the plans. Public by nature — the nickname is checked on its side, not here.",
+    "base": "https://willyoudateme-api.simo-hakim.workers.dev"
   },
 
   "email": {
