@@ -113,6 +113,7 @@ const FALLBACK = {
     }
   ],
   "secret": {
+    "enabled": false,
     "latch": "🔩",
     "latchLabel": "There is one more thing you could pick",
     "activity": "come build furniture",
@@ -431,6 +432,9 @@ const Sound = (() => {
       el.classList.toggle('is-active', on);
       el.hidden = !on;
     }
+    // The credit line is pinned to the bottom of the window, so it only works
+    // while the scene is short enough not to reach it. CSS reads this.
+    document.body.dataset.scene = name;
   };
 
   /* ── copy from content.json ─────────────────────────────── */
@@ -705,25 +709,32 @@ const Sound = (() => {
   const secretLatch = $('#secretLatch');
   const secretChip  = $('#secretChip');
 
-  secretLatch.addEventListener('click', () => {
-    secretChip.hidden = false;
-    secretLatch.setAttribute('aria-expanded', 'true');
-    secretLatch.classList.add('is-open');
-    Sound.blip();
-    secretChip.focus();
-  });
+  // Switched off from content.json rather than torn out: the screw is hidden
+  // and nothing is wired, but the markup, the styles and the copy all stay
+  // where they are. Set secret.enabled back to true to bring it back.
+  if (C.secret.enabled === false) {
+    $('.secret').hidden = true;
+  } else {
+    secretLatch.addEventListener('click', () => {
+      secretChip.hidden = false;
+      secretLatch.setAttribute('aria-expanded', 'true');
+      secretLatch.classList.add('is-open');
+      Sound.blip();
+      secretChip.focus();
+    });
 
-  secretChip.addEventListener('click', () => {
-    state.furniture = !state.furniture;
-    secretChip.setAttribute('aria-checked', String(state.furniture));
-    // The time chips own the label the rest of the time; while furniture is
-    // on it wins, and switching it off hands the label back.
-    state.label = state.furniture
-      ? C.secret.activity
-      : ($$('.time[aria-checked="true"]', timesEl)[0]?.dataset.label || null);
-    Sound.blip();
-    refresh();
-  });
+    secretChip.addEventListener('click', () => {
+      state.furniture = !state.furniture;
+      secretChip.setAttribute('aria-checked', String(state.furniture));
+      // The time chips own the label the rest of the time; while furniture is
+      // on it wins, and switching it off hands the label back.
+      state.label = state.furniture
+        ? C.secret.activity
+        : ($$('.time[aria-checked="true"]', timesEl)[0]?.dataset.label || null);
+      Sound.blip();
+      refresh();
+    });
+  }
 
   message.addEventListener('input', () => {
     state.message = message.value.trim();

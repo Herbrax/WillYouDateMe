@@ -1,0 +1,29 @@
+name = "willyoudateme-api"
+main = "src/index.js"
+compatibility_date = "2025-06-01"
+
+[vars]
+# Where the plans are written. This must be a PRIVATE repo, and not the one the
+# site is served from — every write is a commit, and commits to the site repo
+# would redeploy Pages on every submission.
+GH_OWNER = "Herbrax"
+# Exact casing — the API is reached directly rather than through a redirect,
+# and a redirected PUT is not something to rely on.
+GH_REPO = "WillYouDateMe-data"
+DATA_DIR = "data"
+
+# Only these origins may call the API from a browser.
+ALLOWED_ORIGINS = "https://willyoudateme.simohakim.com,http://localhost:8788"
+
+# Per IP, per route. The nickname is one short word, so this is the only thing
+# standing between a guess and a write — don't raise it much.
+[[unsafe.bindings]]
+name = "RATE_LIMIT"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 8, period = 60 }
+
+# Secrets — never in this file. Set them with:
+#   npx wrangler secret put NICKNAME
+#   npx wrangler secret put GH_TOKEN
+#   npx wrangler secret put TOKEN_SECRET

@@ -97,8 +97,12 @@ pass. Anything else shakes the field and pops the broom.
 faded screw sits under the time chips, and clicking it opens the chip.
 
 ```json
-"secret": { "activity": "come build furniture", "sub": "allen key included" }
+"secret": { "enabled": false, "activity": "come build furniture", "sub": "allen key included" }
 ```
+
+> **Currently off.** With `"enabled": false` the screw is hidden and nothing is
+> wired to it, but the markup, styles and copy all stay put — set it back to
+> `true` and the feature returns exactly as it was.
 
 Once it is on, it outranks whatever the time chip called the outing, and it is
 what shows up on the receipt and in the email. Clicking it again hands the

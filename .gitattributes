@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# ...except the audio. git guessed wrong on this one and normalised line
+# endings inside it, which quietly dropped 253 bytes out of the copy in dist/.
+*.mp3 -text

@@ -122,6 +122,43 @@ button, textarea, input { font: inherit; touch-action: manipulation; }
   50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.06); }
 }
 
+/* ── the signature ────────────────────────────────────────── */
+
+/* Sits above the stage but under the petals and the shoo, and never takes a
+   pointer — the No button has to be free to scoot across it. */
+.credit {
+  position: fixed;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 4;
+  margin: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  font-family: "Caveat", "Bradley Hand", cursive;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: .01em;
+  color: var(--mauve);
+  opacity: .72;
+}
+
+.credit span {
+  font-size: .82em;
+  color: var(--mauve-dim);
+}
+
+/* Only the front door. The plan and done cards are taller than the screen, and
+   a pinned line would sit on top of them. Also gone when the window is too
+   short for it to clear the buttons. */
+body[data-scene="plan"] .credit,
+body[data-scene="done"] .credit { display: none; }
+
+@media (max-height: 520px) {
+  .credit { display: none; }
+}
+
 /* ── stage & scenes ───────────────────────────────────────── */
 
 .stage {
@@ -802,6 +839,73 @@ button, textarea, input { font: inherit; touch-action: manipulation; }
   100% { box-shadow: 0 0 0 0 rgba(255,196,107,0); }
 }
 
+.btn--cal {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 27px 13px 22px;
+  font-size: 16px;
+  text-decoration: none;
+  color: var(--ink);
+  background:
+    linear-gradient(168deg, var(--paper-hi) 0%, var(--paper) 58%, var(--paper-lo) 100%);
+  border-color: rgba(255,255,255,.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    0 10px 22px rgba(255,159,187,.3),
+    0 0 34px rgba(255,140,170,.16);
+  animation: bob-cal 5.5s ease-in-out infinite;
+}
+
+/* a petal peeking out from behind the pill */
+.btn--cal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 140% at 18% 0%, rgba(255,255,255,.5), transparent 58%);
+  pointer-events: none;
+}
+.btn__glyph {
+  font-size: 17px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform .34s var(--ease-spring);
+}
+.btn--cal:hover .btn__glyph,
+.btn--cal:focus-visible .btn__glyph { transform: rotate(-14deg) scale(1.18); }
+
+.btn--cal:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.6),
+    0 16px 30px rgba(255,159,187,.38),
+    0 0 44px rgba(255,140,170,.26);
+}
+.btn--cal:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+/* pressed: it gives, then springs back past its resting size */
+.btn--cal.is-picked {
+  animation: picked .5s var(--ease-spring);
+}
+@keyframes picked {
+  0%   { transform: scale(.93) translateY(1px); }
+  45%  { transform: scale(1.06) translateY(-4px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes bob-cal {
+  0%, 100% { transform: translateY(0) rotate(-.6deg); }
+  50%      { transform: translateY(-4px) rotate(.6deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn--cal { animation: none; }
+  .btn--cal.is-picked { animation: none; }
+}
+
 .linkbtn {
   background: none;
   border: 0;
@@ -994,11 +1098,14 @@ button, textarea, input { font: inherit; touch-action: manipulation; }
         </div>
       </dl>
       <p class="receipt__status" id="mailStatus" role="status" aria-live="polite"></p>
+      <a class="btn btn--cal" id="calBtn" download></a>
       <button class="linkbtn" id="againBtn" type="button"></button>
     </div>
   </section>
 
 </main>
+
+<p class="credit">By Tatiana <span>(Muse)</span> &amp; Simo <span>(Dev)</span></p>
 
 <div class="shoo" id="shoo" hidden>
   <div class="shoo__box" role="alertdialog" aria-modal="true" aria-labelledby="shooTitle" aria-describedby="shooBody">
@@ -1117,6 +1224,7 @@ window.__CONTENT__ = {
     }
   ],
   "secret": {
+    "enabled": false,
     "latch": "🔩",
     "latchLabel": "There is one more thing you could pick",
     "activity": "come build furniture",
@@ -1138,6 +1246,14 @@ window.__CONTENT__ = {
     "mockNote": "(mocked — logged to the console)",
     "failed": "The note did not get through",
     "again": "start over"
+  },
+  "calendar": {
+    "button": "Add to calendar",
+    "glyph": "🌷",
+    "title": "It's a date ♡",
+    "durationMinutes": 90,
+    "filename": "its-a-date.ics",
+    "noteLabel": "They said:"
   },
   "email": {
     "recipient": "herbrax212@gmail.com",
@@ -1164,6 +1280,7 @@ window.__CONTENT__ = {
 const $  = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const pad2 = (n) => String(n).padStart(2, '0');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => (
@@ -1270,6 +1387,7 @@ const FALLBACK = {
     }
   ],
   "secret": {
+    "enabled": false,
     "latch": "🔩",
     "latchLabel": "There is one more thing you could pick",
     "activity": "come build furniture",
@@ -1291,6 +1409,14 @@ const FALLBACK = {
     "mockNote": "(mocked — logged to the console)",
     "failed": "The note did not get through",
     "again": "start over"
+  },
+  "calendar": {
+    "button": "Add to calendar",
+    "glyph": "🌷",
+    "title": "It's a date ♡",
+    "durationMinutes": 90,
+    "filename": "its-a-date.ics",
+    "noteLabel": "They said:"
   },
   "email": {
     "recipient": "herbrax212@gmail.com",
@@ -1372,7 +1498,7 @@ const Fx = (() => {
     if (parts.length > cap) parts.splice(0, parts.length - cap);
   }
 
-  function burst(x, y, n = 40) {
+  function burst(x, y, n = 40, pool = ALL) {
     const k = window.innerWidth < 520 ? 0.65 : 1;
     for (let i = 0; i < n * k; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -1383,7 +1509,27 @@ const Fx = (() => {
         vy: Math.sin(a) * sp - 3,
         g: 0.14, drag: 0.965,
         size: 15 + Math.random() * 21,
+        char: pick(pool),
         fade: 0.004,
+      });
+    }
+  }
+
+  // Flowers only, thrown upward in a fan rather than a sphere, so it reads as
+  // a bouquet opening out of the button instead of an explosion.
+  function bloom(x, y, n = 30) {
+    const k = window.innerWidth < 520 ? 0.7 : 1;
+    for (let i = 0; i < n * k; i++) {
+      const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.1;
+      const sp = 4 + Math.random() * 9;
+      spawn({
+        x: x + (Math.random() - 0.5) * 40, y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        g: 0.11, drag: 0.972,
+        size: 13 + Math.random() * 18,
+        char: pick(FLOWERS),
+        swayAmp: 0.7, fade: 0.0026,
       });
     }
   }
@@ -1462,7 +1608,7 @@ const Fx = (() => {
   }
   requestAnimationFrame(frame);
 
-  return { burst, celebrate };
+  return { burst, bloom, celebrate };
 })();
 
 /* ── a little sound ───────────────────────────────────────── */
@@ -1501,9 +1647,24 @@ const Sound = (() => {
     btn.title = on ? cfg.onTitle : cfg.offTitle;
   };
 
-  // Rejects while the page has not been interacted with — that is the autoplay
-  // policy talking, not an error, so it is swallowed and retried on the gesture.
-  const play = () => (on && music.src ? music.play().catch(() => {}) : Promise.resolve());
+  const play = () => (on && music.src ? music.play() : Promise.resolve());
+
+  // Browsers grant user activation when a gesture *completes* — pointerup,
+  // click, touchend, keyup — not when it starts, and the No button's
+  // pointerdown handler calls preventDefault(), which suppresses activation
+  // for taps that land on it. So listen wide, listen on the capture phase so
+  // nothing downstream can swallow the event, and keep listening until a
+  // play() actually resolves rather than assuming the first try took.
+  const GESTURES = ['pointerup', 'click', 'touchend', 'keyup', 'pointerdown', 'keydown'];
+
+  function armUnlock() {
+    const disarm = () => GESTURES.forEach((ev) => window.removeEventListener(ev, unlock, true));
+    function unlock() {
+      if (!on) { disarm(); return; }
+      play().then(disarm).catch(() => {});   // still refused — wait for the next one
+    }
+    GESTURES.forEach((ev) => window.addEventListener(ev, unlock, true));
+  }
 
   function init(sound) {
     cfg = sound;
@@ -1512,24 +1673,13 @@ const Sound = (() => {
     music.volume = clamp(sound.volume ?? 0.2, 0, 1);
     on = Boolean(sound.defaultOn);
     paint();
-    if (!on) return;
-
-    music.play().catch(() => {
-      // Blocked. Start on whatever the first gesture turns out to be —
-      // pressing Yes, chasing No, or a key.
-      const events = ['pointerdown', 'keydown', 'touchstart'];
-      const unlock = () => {
-        events.forEach((ev) => window.removeEventListener(ev, unlock));
-        play();
-      };
-      events.forEach((ev) => window.addEventListener(ev, unlock, { passive: true }));
-    });
+    if (on) play().catch(armUnlock);
   }
 
   btn.addEventListener('click', () => {
     on = !on;
     paint();
-    if (on) { ensure(); play(); tone(880, 0, 0.18, 'triangle', 0.04); }
+    if (on) { ensure(); play().catch(armUnlock); tone(880, 0, 0.18, 'triangle', 0.04); }
     else music.pause();          // pause, not stop: it picks up where it left off
   });
 
@@ -1556,6 +1706,9 @@ const Sound = (() => {
       el.classList.toggle('is-active', on);
       el.hidden = !on;
     }
+    // The credit line is pinned to the bottom of the window, so it only works
+    // while the scene is short enough not to reach it. CSS reads this.
+    document.body.dataset.scene = name;
   };
 
   /* ── copy from content.json ─────────────────────────────── */
@@ -1830,25 +1983,32 @@ const Sound = (() => {
   const secretLatch = $('#secretLatch');
   const secretChip  = $('#secretChip');
 
-  secretLatch.addEventListener('click', () => {
-    secretChip.hidden = false;
-    secretLatch.setAttribute('aria-expanded', 'true');
-    secretLatch.classList.add('is-open');
-    Sound.blip();
-    secretChip.focus();
-  });
+  // Switched off from content.json rather than torn out: the screw is hidden
+  // and nothing is wired, but the markup, the styles and the copy all stay
+  // where they are. Set secret.enabled back to true to bring it back.
+  if (C.secret.enabled === false) {
+    $('.secret').hidden = true;
+  } else {
+    secretLatch.addEventListener('click', () => {
+      secretChip.hidden = false;
+      secretLatch.setAttribute('aria-expanded', 'true');
+      secretLatch.classList.add('is-open');
+      Sound.blip();
+      secretChip.focus();
+    });
 
-  secretChip.addEventListener('click', () => {
-    state.furniture = !state.furniture;
-    secretChip.setAttribute('aria-checked', String(state.furniture));
-    // The time chips own the label the rest of the time; while furniture is
-    // on it wins, and switching it off hands the label back.
-    state.label = state.furniture
-      ? C.secret.activity
-      : ($$('.time[aria-checked="true"]', timesEl)[0]?.dataset.label || null);
-    Sound.blip();
-    refresh();
-  });
+    secretChip.addEventListener('click', () => {
+      state.furniture = !state.furniture;
+      secretChip.setAttribute('aria-checked', String(state.furniture));
+      // The time chips own the label the rest of the time; while furniture is
+      // on it wins, and switching it off hands the label back.
+      state.label = state.furniture
+        ? C.secret.activity
+        : ($$('.time[aria-checked="true"]', timesEl)[0]?.dataset.label || null);
+      Sound.blip();
+      refresh();
+    });
+  }
 
   message.addEventListener('input', () => {
     state.message = message.value.trim();
@@ -1928,6 +2088,97 @@ const Sound = (() => {
     return { ok: true, id: `mock_${Date.now()}`, mocked: true };
   }
 
+  /* ── add to calendar ────────────────────────────────────── */
+
+  // RFC 5545. Times are written without a zone or a trailing Z, which makes
+  // them "floating": 6:30pm stays 6:30pm wherever the calendar is read, which
+  // is what a date at golden hour means.
+  const icsTime = (d) => [
+    d.getFullYear(), pad2(d.getMonth() + 1), pad2(d.getDate()), 'T',
+    pad2(d.getHours()), pad2(d.getMinutes()), '00',
+  ].join('');
+
+  const icsText = (v) => String(v)
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+
+  // Lines cap at 75 octets, continuations start with a space.
+  const utf8 = new TextEncoder();
+  const fold = (line) => {
+    const out = [];
+    let buf = '';
+    for (const ch of line) {
+      const next = buf + ch;
+      if (utf8.encode(next).length > 74) { out.push(buf); buf = ' ' + ch; }
+      else buf = next;
+    }
+    out.push(buf);
+    return out.join('\r\n');
+  };
+
+  function buildIcs(when) {
+    const end = new Date(when.dt.getTime() + (C.calendar.durationMinutes || 90) * 60000);
+    const stamp = new Date().toISOString().replace(/[-:]|\.\d{3}/g, '');
+
+    const desc = [`${C.done.whatLabel}: ${state.label || C.done.fallbackActivity}`];
+    if (state.message) desc.push(`${C.calendar.noteLabel} "${state.message}"`);
+
+    const lines = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//willyoudateme//EN',
+      'CALSCALE:GREGORIAN',
+      'BEGIN:VEVENT',
+      `UID:${stamp}-${Math.random().toString(36).slice(2, 10)}@willyoudateme`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART:${icsTime(when.dt)}`,
+      `DTEND:${icsTime(end)}`,
+      `SUMMARY:${icsText(C.calendar.title)}`,
+      `DESCRIPTION:${icsText(desc.join('\n'))}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT1H',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${icsText(C.calendar.title)}`,
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ];
+    return lines.map(fold).join('\r\n') + '\r\n';
+  }
+
+  const calBtn = $('#calBtn');
+  let calUrl = null;
+
+  const glyph = document.createElement('span');
+  glyph.className = 'btn__glyph';
+  glyph.setAttribute('aria-hidden', 'true');
+  glyph.textContent = C.calendar.glyph;
+  const label = document.createElement('span');
+  label.textContent = C.calendar.button;
+  calBtn.replaceChildren(glyph, label);
+
+  function offerCalendar(when) {
+    if (calUrl) URL.revokeObjectURL(calUrl);
+    calUrl = URL.createObjectURL(new Blob([buildIcs(when)], { type: 'text/calendar;charset=utf-8' }));
+    calBtn.href = calUrl;
+    calBtn.download = C.calendar.filename;
+  }
+
+  calBtn.addEventListener('click', () => {
+    const r = calBtn.getBoundingClientRect();
+    Fx.bloom(r.left + r.width / 2, r.top + r.height / 2, reduced ? 10 : 34);
+    calBtn.classList.remove('is-picked');
+    void calBtn.offsetWidth;                 // restart the squish on a second press
+    calBtn.classList.add('is-picked');
+    Sound.yay();
+  });
+
+  // bob-cal is infinite so it never fires this — only the press squish does,
+  // and dropping the class hands the idle bob back.
+  calBtn.addEventListener('animationend', () => calBtn.classList.remove('is-picked'));
+
   function buildPayload(when) {
     const lines = [C.email.opening, '', `When:  ${when.text}`,
                    `What:  ${state.label || C.done.fallbackActivity}`,
@@ -1965,6 +2216,8 @@ const Sound = (() => {
       $('#rNote').textContent = `“${state.message}”`;
       $('#rNoteRow').hidden = false;
     }
+
+    offerCalendar(when);
 
     setScene('done');
     window.scrollTo({ top: 0 });

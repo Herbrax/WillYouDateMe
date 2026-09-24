@@ -11,11 +11,17 @@ Run this after editing content.json.
 import json, pathlib, re, shutil
 
 root = pathlib.Path(__file__).parent
-content = json.loads((root / 'content.json').read_text())
+
+# Every file here is UTF-8 — the copy has accents and emoji in it. Say so
+# explicitly, or Python picks the console codepage (cp1252 on a French Windows)
+# and dies on the first character outside it.
+UTF8 = {'encoding': 'utf-8'}
+
+content = json.loads((root / 'content.json').read_text(**UTF8))
 pretty = json.dumps(content, indent=2, ensure_ascii=False)
 
 # ── 1. sync the fallback ──────────────────────────────────────
-app = (root / 'app.js').read_text()
+app = (root / 'app.js').read_text(**UTF8)
 app, n = re.subn(
     r'(/\* >>> FALLBACK-CONTENT.*?\*/\n).*?(\n/\* <<< FALLBACK-CONTENT \*/)',
     lambda m: f'{m.group(1)}const FALLBACK = {pretty};{m.group(2)}',
@@ -23,14 +29,14 @@ app, n = re.subn(
 )
 if n != 1:
     raise SystemExit('could not find the FALLBACK-CONTENT markers in app.js')
-(root / 'app.js').write_text(app)
+(root / 'app.js').write_text(app, **UTF8)
 
 # ── 2. inline into one page ───────────────────────────────────
 # The page is one file, but the music sits next to it rather than inside it —
 # base64 in the markup costs a third more bytes and blocks the first paint.
 
-html = (root / 'index.html').read_text()
-css = (root / 'styles.css').read_text()
+html = (root / 'index.html').read_text(**UTF8)
+css = (root / 'styles.css').read_text(**UTF8)
 
 body = re.search(r'<body>(.*)</body>', html, re.S).group(1)
 body = body.replace('<script src="app.js"></script>', '').strip()
@@ -59,7 +65,7 @@ window.__CONTENT__ = {pretty};
 dist = root / 'dist'
 dist.mkdir(exist_ok=True)
 target = dist / 'hey-little-fairy.html'
-target.write_text(out)
+target.write_text(out, **UTF8)
 
 track = root / content.get('sound', {}).get('track', '')
 if track.is_file():

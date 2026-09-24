@@ -72,6 +72,7 @@
   ],
 
   "secret": {
+    "enabled": false,
     "latch": "\ud83d\udd29",
     "latchLabel": "There is one more thing you could pick",
     "activity": "come build furniture",

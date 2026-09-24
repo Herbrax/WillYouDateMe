@@ -116,6 +116,43 @@ button, textarea, input { font: inherit; touch-action: manipulation; }
   50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.06); }
 }
 
+/* ── the signature ────────────────────────────────────────── */
+
+/* Sits above the stage but under the petals and the shoo, and never takes a
+   pointer — the No button has to be free to scoot across it. */
+.credit {
+  position: fixed;
+  left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 4;
+  margin: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  font-family: "Caveat", "Bradley Hand", cursive;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: .01em;
+  color: var(--mauve);
+  opacity: .72;
+}
+
+.credit span {
+  font-size: .82em;
+  color: var(--mauve-dim);
+}
+
+/* Only the front door. The plan and done cards are taller than the screen, and
+   a pinned line would sit on top of them. Also gone when the window is too
+   short for it to clear the buttons. */
+body[data-scene="plan"] .credit,
+body[data-scene="done"] .credit { display: none; }
+
+@media (max-height: 520px) {
+  .credit { display: none; }
+}
+
 /* ── stage & scenes ───────────────────────────────────────── */
 
 .stage {
