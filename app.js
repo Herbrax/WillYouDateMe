@@ -84,7 +84,7 @@ const FALLBACK = {
     "emptyHint": "Pick a day and a time.",
     "dayOnlyHint": "Now a time.",
     "tomorrow": "Tmrw",
-    "daysAhead": 12
+    "daysAhead": 31
   },
   "times": [
     {
@@ -1077,16 +1077,27 @@ const Sound = (() => {
   label.textContent = C.calendar.button;
   calBtn.replaceChildren(glyph, label);
 
-  // Called twice: once as the receipt appears so the button is never dead, and
-  // again once the code is known so it can go in the event.
+  // The receipt appears before the code does. Rather than hand her a file that
+  // is missing it — or one whose URL is revoked mid-click when the real event
+  // replaces it — the button waits until there is something worth downloading.
+  function calendarWaiting(on) {
+    calBtn.classList.toggle('is-waiting', on);
+    calBtn.setAttribute('aria-disabled', String(on));
+    if (on) calBtn.removeAttribute('href');
+  }
+
   function offerCalendar(when, code) {
     if (calUrl) URL.revokeObjectURL(calUrl);
     calUrl = URL.createObjectURL(new Blob([buildIcs(when, code)], { type: 'text/calendar;charset=utf-8' }));
     calBtn.href = calUrl;
     calBtn.download = C.calendar.filename;
+    calendarWaiting(false);
   }
 
-  calBtn.addEventListener('click', () => {
+  calBtn.addEventListener('click', (e) => {
+    // No href yet: the event is not built. Swallow the click rather than let
+    // it read as a download that silently did nothing.
+    if (calBtn.getAttribute('aria-disabled') === 'true') { e.preventDefault(); return; }
     const r = calBtn.getBoundingClientRect();
     Fx.bloom(r.left + r.width / 2, r.top + r.height / 2, reduced ? 10 : 34);
     calBtn.classList.remove('is-picked');
@@ -1162,7 +1173,7 @@ const Sound = (() => {
       $('#rNoteRow').hidden = false;
     }
 
-    offerCalendar(when);
+    calendarWaiting(true);
 
     setScene('done');
     window.scrollTo({ top: 0 });
@@ -1189,8 +1200,10 @@ const Sound = (() => {
     if (code) {
       $('#rCode').textContent = code;
       $('#rCodeRow').hidden = false;
-      offerCalendar(when, code);     // rebuild the event now the code is known
     }
+    // Always — a save that failed still deserves a calendar entry, it just
+    // goes in without a code.
+    offerCalendar(when, code);
 
     try {
       const res = await sendDateRequest(buildPayload(when, code, wasEditing));

@@ -59,7 +59,7 @@
     "emptyHint": "Pick a day and a time.",
     "dayOnlyHint": "Now a time.",
     "tomorrow": "Tmrw",
-    "daysAhead": 12
+    "daysAhead": 31
   },
 
   "times": [

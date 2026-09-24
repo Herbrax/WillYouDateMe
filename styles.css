@@ -922,6 +922,17 @@ body[data-scene="done"] .credit { display: none; }
   animation: bob-cal 5.5s ease-in-out infinite;
 }
 
+/* Waiting on the code. Still there, plainly not ready — the bob stops so it
+   does not keep inviting a press it would not honour. */
+.btn--cal[aria-disabled="true"] {
+  opacity: .45;
+  cursor: default;
+  animation-play-state: paused;
+  box-shadow: none;
+}
+.btn--cal[aria-disabled="true"]:hover { transform: none; }
+.btn--cal[aria-disabled="true"]:hover .btn__glyph { transform: none; }
+
 /* a petal peeking out from behind the pill */
 .btn--cal::after {
   content: "";
